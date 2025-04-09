@@ -1,0 +1,130 @@
+networks:
+  petclinic-devsecops-network:
+    driver: bridge
+    # driver_opts:
+    #   com.docker.network.bridge.name: petclinic-devsecops-br
+    #   com.docker.network.driver.mtu: 1400
+
+services:
+  # Jenkins for Continuous Integration
+  jenkins:
+    build:
+      context: ./jenkins
+      dockerfile: Dockerfile
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - petclinic-devsecops-network
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+    restart: unless-stopped
+
+  # SonarQube for Static Analysis
+  sonarqube:
+    image: sonarqube:lts
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    networks:
+      - petclinic-devsecops-network
+    environment:
+      - SONARQUBE_JDBC_URL=jdbc:postgresql://sonarqube-db:5432/sonar
+      - SONARQUBE_JDBC_USERNAME=sonar
+      - SONARQUBE_JDBC_PASSWORD=sonar
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    depends_on:
+      - sonarqube-db
+
+  # PostgreSQL for SonarQube
+  sonarqube-db:
+    image: postgres:13
+    container_name: sonarqube-db
+    networks:
+      - petclinic-devsecops-network
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    volumes:
+      - sonarqube_db:/var/lib/postgresql/data
+
+  # OWASP ZAP for Security Analysis
+  zap:
+    image: softwaresecurityproject/zap-stable
+    container_name: zap
+    command: zap.sh -daemon -host 0.0.0.0 -port 8090 -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true -config api.key=zap-api-key
+    ports:
+      - "8090:8090"
+    networks:
+      - petclinic-devsecops-network
+    volumes:
+      - zap_data:/zap/wrk
+
+  # Prometheus for Monitoring
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - petclinic-devsecops-network
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+
+  # Grafana for Visualization
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - petclinic-devsecops-network
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+
+  # Spring PetClinic Application (for development/testing)
+  petclinic:
+    build:
+      context: ./petclinic
+      dockerfile: Dockerfile
+    container_name: petclinic
+    ports:
+      - "8081:8080"
+    networks:
+      - petclinic-devsecops-network
+    volumes:
+      - petclinic_data:/app/data
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - JAVA_OPTS=-Xmx512m -Xms256m
+
+volumes:
+  jenkins_home:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_db:
+  zap_data:
+  prometheus_data:
+  grafana_data:
+  petclinic_data:
