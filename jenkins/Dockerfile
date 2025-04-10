@@ -13,12 +13,12 @@ RUN apt-get update && \
                        python3-venv \
                        python3-pip
 
-# Add Docker's official GPG key
+# Add Docker's official GPG key and repository in an architecture-agnostic way
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
-# Set up the Docker repository
+# Set up Docker repository with architecture detection
 RUN echo \
-  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
   $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 # Install Docker CLI
@@ -46,5 +46,5 @@ RUN /opt/venv/bin/pip install ansible-lint docker paramiko
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli -f /usr/share/jenkins/ref/plugins.txt
 
-# Switch back to Jenkins user
+# Switch back to Jenkins user from root, for security
 USER jenkins
