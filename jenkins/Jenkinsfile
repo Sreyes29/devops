@@ -1,0 +1,35 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                echo 'Repository checkout complete'
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                sh 'mvn -B clean package -DskipTests'
+                echo 'Build completed'
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+                echo 'Tests completed'
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+}
