@@ -38,29 +38,34 @@ pipeline {
             }
         }
 
-        stage('ZAP Scan') {
+        stage('ZAP Scan via API') {
             steps {
                 sh '''
-                docker run --rm --network=petclinic-devsecops-network \
-                    -v $(pwd):/zap/wrk:rw \
-                    owasp/zap2docker-stable zap-baseline.py \
-                    -t http://host.docker.internal:8080 \
-                    -r zap-report.html \
-                    -z "-config api.key=zap-api-key"
+                # Wait for ZAP to fully start (optional sleep or health check)
+                sleep 10
+                # Spider the app
+                curl "http://zap:8090/JSON/spider/action/scan/?url=http://petclinic:8080&apikey=zap-api-key"
+                # Wait for spider to finish
+                sleep 10
+                # Active scan
+                curl "http://zap:8090/JSON/ascan/action/scan/?url=http://petclinic:8080&apikey=zap-api-key"
+                # Wait for scan to complete (polling can be added)
+                sleep 30
+                # Get HTML report
+                curl "http://zap:8090/OTHER/core/other/htmlreport/?apikey=zap-api-key" -o zap-report.html
                 '''
             }
         }
-        
+
         stage('Publish ZAP Report') {
             steps {
-                sh 'ls -l' // debug: check if zap-report.html exists
                 publishHTML([
-                allowMissing: false,                
-                alwaysLinkToLastBuild: true,       
-                reportName: 'ZAP Report',
-                reportDir: '.',
-                reportFiles: 'zap-report.html',
-                keepAll: true
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    reportName: 'ZAP Report',
+                    reportDir: '.',
+                    reportFiles: 'zap-report.html',
+                    keepAll: true
                 ])
             }
         }
