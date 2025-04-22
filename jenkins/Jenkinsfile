@@ -44,7 +44,7 @@ pipeline {
                 docker run --rm --network=petclinic-devsecops-network \
                     -v $(pwd):/zap/wrk:rw \
                     owasp/zap2docker-stable zap-baseline.py \
-                    -t http://petclinic:8080 \
+                    -t http://host.docker.internal:8080 \
                     -r zap-report.html \
                     -z "-config api.key=zap-api-key"
                 '''
