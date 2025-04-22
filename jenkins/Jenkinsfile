@@ -32,7 +32,7 @@ pipeline {
                 withSonarQubeEnv('petclinic-sonarqube') { // Use the SonarQube server configured in Jenkins
                     dir('petclinic') {
                         // Run SonarQube analysis
-                        sh 'mvn sonar:sonar -Dsonar.host.url=http://localhost:9000'
+                        sh 'mvn sonar:sonar -Dsonar.host.url=http://host.docker.internal:9000'
                     }
                 }
             }
