@@ -65,6 +65,8 @@ pipeline {
             steps {
                 sh 'ls -l' // debug: check if zap-report.html exists
                 publishHTML([
+                allowMissing: false,                 // Add this line
+                alwaysLinkToLastBuild: true,        // Add this line
                 reportName: 'ZAP Report',
                 reportDir: '.',
                 reportFiles: 'zap-report.html',
