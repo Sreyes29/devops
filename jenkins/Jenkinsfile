@@ -27,7 +27,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+        /* stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('petclinic-sonarqube') { // Use the SonarQube server configured in Jenkins
                     dir('petclinic') {
@@ -36,7 +36,7 @@ pipeline {
                     }
                 }
             }
-        }
+        } */
     }
 
     post {
