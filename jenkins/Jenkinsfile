@@ -19,6 +19,7 @@ pipeline {
         
         stage('Test') {
             steps {
+                sh 'cd petclinic'
                 sh 'mvn test'
                 echo 'Tests completed'
             }
