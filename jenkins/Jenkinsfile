@@ -27,7 +27,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('Static Analysis') {
             steps {
                 withSonarQubeEnv('petclinic-sonarqube') { // Use the SonarQube server configured in Jenkins
                     dir('petclinic') {
@@ -35,6 +35,41 @@ pipeline {
                         sh 'mvn sonar:sonar -Dsonar.login=squ_ed4f0c94df65377082e7489d3ac19025abd0214c -Dsonar.host.url=http://host.docker.internal:9000'
                     }
                 }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                // Wait for SonarQube to evaluate the code and return a quality gate result
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+                echo "Quality gate passed"
+            }
+        }
+
+        stage('ZAP Scan') {
+            steps {
+                sh '''
+                docker run --rm --network=petclinic-devsecops-network \
+                    -v $(pwd):/zap/wrk:rw \
+                    owasp/zap2docker-stable zap-baseline.py \
+                    -t http://petclinic:8080 \
+                    -r zap-report.html \
+                    -z "-config api.key=zap-api-key"
+                '''
+            }
+        }
+        
+        stage('Publish ZAP Report') {
+            steps {
+                sh 'ls -l' // debug: check if zap-report.html exists
+                publishHTML([
+                reportName: 'ZAP Report',
+                reportDir: '.',
+                reportFiles: 'zap-report.html',
+                keepAll: true
+                ])
             }
         }
     }
