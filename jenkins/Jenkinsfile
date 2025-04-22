@@ -12,7 +12,7 @@ pipeline {
         stage('Build') {
             steps {
                 dir('petclinic') {
-                    sh './mvnw -B clean package -DskipTests'
+                    sh 'mvn -B clean package -DskipTests'
                 }
                 echo 'Build completed'
             }
@@ -21,7 +21,7 @@ pipeline {
         stage('Test') {
             steps {
                 dir('petclinic') {
-                    sh './mvnw test'
+                    sh 'mvn test'
                 }
                 echo 'Tests completed'
             }
