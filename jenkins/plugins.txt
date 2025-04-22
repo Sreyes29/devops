@@ -20,3 +20,4 @@ timestamper:latest
 ws-cleanup:latest
 matrix-auth:latest
 authorize-project:latest
+job-dsl:latest
