@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    
+
     stages {
         stage('Checkout') {
             steps {
@@ -8,24 +8,26 @@ pipeline {
                 echo 'Repository checkout complete'
             }
         }
-        
+
         stage('Build') {
             steps {
-                sh 'cd petclinic' 
-                'mvn -B clean package -DskipTests'
+                dir('petclinic') {
+                    sh './mvnw -B clean package -DskipTests'
+                }
                 echo 'Build completed'
             }
         }
-        
+
         stage('Test') {
             steps {
-                sh 'cd petclinic'
-                'mvn test'
+                dir('petclinic') {
+                    sh './mvnw test'
+                }
                 echo 'Tests completed'
             }
         }
     }
-    
+
     post {
         success {
             echo 'Pipeline completed successfully!'
