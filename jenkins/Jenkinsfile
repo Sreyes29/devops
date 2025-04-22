@@ -28,6 +28,17 @@ pipeline {
         }
     }
 
+    stage('SonarQube Analysis') {
+        steps {
+            withSonarQubeEnv('SonarQube') {
+                dir('petclinic') {
+                    // Run SonarQube analysis
+                    sh 'mvn sonar:sonar -Dsonar.projectKey=spring-petclinic -Dsonar.host.url=http://localhost:9000'
+                }
+            }
+        }
+    }
+
     post {
         success {
             echo 'Pipeline completed successfully!'
