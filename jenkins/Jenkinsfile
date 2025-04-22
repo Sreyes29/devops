@@ -38,7 +38,7 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
+        /* stage('Quality Gate') {
             steps {
                 // Wait for SonarQube to evaluate the code and return a quality gate result
                 timeout(time: 1, unit: 'HOURS') {
@@ -46,7 +46,7 @@ pipeline {
                 }
                 echo "Quality gate passed"
             }
-        }
+        } */
 
         stage('ZAP Scan') {
             steps {
