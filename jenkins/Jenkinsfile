@@ -11,6 +11,7 @@ pipeline {
         
         stage('Build') {
             steps {
+                sh 'cd petclinic' 
                 sh 'mvn -B clean package -DskipTests'
                 echo 'Build completed'
             }
