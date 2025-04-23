@@ -6,5 +6,5 @@ docker network create --driver bridge petclinic-devsecops-network
 # Verify the network was created
 docker network ls | grep petclinic-devsecops-network
 
-# Display network details
+# Display docker network details
 docker network inspect petclinic-devsecops-network
