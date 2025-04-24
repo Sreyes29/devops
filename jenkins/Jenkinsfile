@@ -37,7 +37,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('petclinic-sonarqube') { // Use the SonarQube server configured in Jenkins
                     dir('petclinic') {
-                        // Run SonarQube analysis with token TODO: sqa_8ac139293b7c2f309e0a8ef769f0ff852f043c9c
+                        // Run SonarQube analysis with token sqa_8ac139293b7c2f309e0a8ef769f0ff852f043c9c
                         sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=http://host.docker.internal:9000'
                     }
                 }
