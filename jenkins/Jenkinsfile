@@ -100,60 +100,58 @@ pipeline {
         
         stage('Deploy with Ansible') {
             steps {
-                // Write the Ansible playbook
-                writeFile file: 'deployment/deploy.yml', text: '''
-                ---
-                - name: Deploy Spring PetClinic
-                  hosts: production
-                  become: yes
-                  tasks:
-                    - name: Ensure Java is installed
-                      apt:
-                        name: openjdk-17-jre
-                        state: present
-                        update_cache: yes
-                    
-                    - name: Create application directory
-                      file:
-                        path: /opt/petclinic
-                        state: directory
-                        mode: '0755'
-                    
-                    - name: Copy JAR file
-                      copy:
-                        src: petclinic.jar
-                        dest: /opt/petclinic/petclinic.jar
-                        mode: '0755'
-                    
-                    - name: Create systemd service file
-                      copy:
-                        content: |
-                          [Unit]
-                          Description=Spring PetClinic Application
-                          After=network.target
-                          
-                          [Service]
-                          User=ubuntu
-                          ExecStart=/usr/bin/java -jar /opt/petclinic/petclinic.jar
-                          SuccessExitStatus=143
-                          Restart=always
-                          RestartSec=5
-                          
-                          [Install]
-                          WantedBy=multi-user.target
-                        dest: /etc/systemd/system/petclinic.service
-                        mode: '0644'
-                    
-                    - name: Reload systemd
-                      systemd:
-                        daemon_reload: yes
-                    
-                    - name: Enable and restart PetClinic service
-                      systemd:
-                        name: petclinic
-                        enabled: yes
-                        state: restarted
-                '''
+                // Write the Ansible playbook with proper YAML formatting
+                writeFile file: 'deployment/deploy.yml', text: '''---
+        - name: Deploy Spring PetClinic
+        hosts: production
+        become: yes
+        tasks:
+            - name: Ensure Java is installed
+            apt:
+                name: openjdk-17-jre
+                state: present
+                update_cache: yes
+            
+            - name: Create application directory
+            file:
+                path: /opt/petclinic
+                state: directory
+                mode: '0755'
+            
+            - name: Copy JAR file
+            copy:
+                src: petclinic.jar
+                dest: /opt/petclinic/petclinic.jar
+                mode: '0755'
+            
+            - name: Create systemd service file
+            copy:
+                content: |
+                [Unit]
+                Description=Spring PetClinic Application
+                After=network.target
+                
+                [Service]
+                User=ubuntu
+                ExecStart=/usr/bin/java -jar /opt/petclinic/petclinic.jar
+                SuccessExitStatus=143
+                Restart=always
+                RestartSec=5
+                
+                [Install]
+                WantedBy=multi-user.target
+                dest: /etc/systemd/system/petclinic.service
+                mode: '0644'
+            
+            - name: Reload systemd
+            systemd:
+                daemon_reload: yes
+            
+            - name: Enable and restart PetClinic service
+            systemd:
+                name: petclinic
+                enabled: yes
+                state: restarted'''
                 
                 // Run the Ansible playbook
                 dir('deployment') {
@@ -165,7 +163,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Verify Deployment') {
             steps {
                 // Wait for application to start
