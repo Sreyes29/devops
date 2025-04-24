@@ -1,0 +1,38 @@
+# PetClinic Deployment
+
+This directory contains all the files needed for automated deployment of the Spring PetClinic application.
+
+## Deployment Process
+
+The deployment process is fully automated through the Jenkins pipeline. The following steps are executed:
+
+1. The application is built and tested
+2. Static code analysis is performed
+3. Security scanning is executed
+4. The application and deployment files are packaged
+5. The package is copied to the production VM
+6. The `setup.sh` script is executed to:
+   - Install Java (if needed)
+   - Create the application user
+   - Set up the application directory
+   - Configure the systemd service
+   - Start the application
+
+## Manual Troubleshooting
+
+If you need to manually troubleshoot the deployment:
+
+```bash
+# Check service status
+sudo systemctl status petclinic
+
+# View application logs
+sudo journalctl -u petclinic
+
+# Restart the service
+sudo systemctl restart petclinic
+```
+
+## Configuration
+
+The application configuration is stored in `application.properties`. Edit this file to change database settings, logging configuration, or server properties.

@@ -5,7 +5,8 @@ pipeline {
         SONAR_TOKEN     = credentials('SONAR_TOKEN') // SonarQube token
         ANSIBLE_HOST_KEY_CHECKING = 'False'
         PROD_VM_IP = credentials('prod-vm-ip') // Jenkins credential for VM IP
-        SSH_KEY = credentials('prod-vm-ssh-key') // SSH key credential for authentication
+        SSH_KEY = '~/.ssh/gcp_key' // Path to SSH key in Jenkins container
+        SSH_USER = 'jenkins' // SSH username
     }
     stages {
         stage('Checkout') {
@@ -78,103 +79,36 @@ pipeline {
 
         stage('Prepare Deployment') {
             steps {
-                // Archive the JAR or WAR for deployment
-                dir('petclinic') {
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-                }
-                
-                // Copy artifact to workspace for Ansible to use
-                sh 'mkdir -p deployment'
-                sh 'cp petclinic/target/*.jar deployment/petclinic.jar'
-                
-                // Create Ansible inventory file
-                writeFile file: 'deployment/inventory.ini', text: """
-                [production]
-                prodserver ansible_host=${PROD_VM_IP} ansible_user=ubuntu ansible_ssh_private_key_file=${SSH_KEY}
-                
-                [all:vars]
-                ansible_python_interpreter=/usr/bin/python3
-                """
-            }
-        }
-        
-        stage('Deploy with Ansible') {
-            steps {
-                // Write the Ansible playbook with proper YAML formatting
-                writeFile file: 'deployment/deploy.yml', text: '''---
-        - name: Deploy Spring PetClinic
-        hosts: production
-        become: yes
-        tasks:
-            - name: Ensure Java is installed
-            apt:
-                name: openjdk-17-jre
-                state: present
-                update_cache: yes
-            
-            - name: Create application directory
-            file:
-                path: /opt/petclinic
-                state: directory
-                mode: '0755'
-            
-            - name: Copy JAR file
-            copy:
-                src: petclinic.jar
-                dest: /opt/petclinic/petclinic.jar
-                mode: '0755'
-            
-            - name: Create systemd service file
-            copy:
-                content: |
-                [Unit]
-                Description=Spring PetClinic Application
-                After=network.target
-                
-                [Service]
-                User=ubuntu
-                ExecStart=/usr/bin/java -jar /opt/petclinic/petclinic.jar
-                SuccessExitStatus=143
-                Restart=always
-                RestartSec=5
-                
-                [Install]
-                WantedBy=multi-user.target
-                dest: /etc/systemd/system/petclinic.service
-                mode: '0644'
-            
-            - name: Reload systemd
-            systemd:
-                daemon_reload: yes
-            
-            - name: Enable and restart PetClinic service
-            systemd:
-                name: petclinic
-                enabled: yes
-                state: restarted'''
-                
-                // Run the Ansible playbook
-                dir('deployment') {
-                    ansiblePlaybook(
-                        playbook: 'deploy.yml',
-                        inventory: 'inventory.ini',
-                        colorized: true
-                    )
-                }
+                sh '''
+                # Create a deployment package
+                mkdir -p deployment-package
+                cp petclinic/target/*.jar deployment-package/petclinic.jar
+                cp deployment/* deployment-package/
+                chmod +x deployment-package/*.sh
+                '''
             }
         }
 
-        stage('Verify Deployment') {
+        stage('Deploy to VM') {
             steps {
-                // Wait for application to start
-                sh 'sleep 30'
+                sh '''
+                # Ensure SSH directory permissions are correct
+                chmod 700 ~/.ssh
+                chmod 600 ${SSH_KEY}
                 
-                // Check if application is running
-                sh "curl -s --retry 5 --retry-delay 10 http://${PROD_VM_IP}:8080/actuator/health || exit 1"
+                # Create deployment directory on remote server
+                ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${SSH_USER}@${PROD_VM_IP} "mkdir -p ~/petclinic-deployment"
                 
-                echo 'Deployment verified successfully!'
+                # Copy deployment package to the VM
+                scp -i ${SSH_KEY} -o StrictHostKeyChecking=no -r deployment-package/* ${SSH_USER}@${PROD_VM_IP}:~/petclinic-deployment/
+                
+                # Execute remote setup script
+                ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${SSH_USER}@${PROD_VM_IP} "cd ~/petclinic-deployment && sudo ./setup.sh"
+                '''
+                echo 'Deployment completed'
             }
         }
+
     }
 
     post {
