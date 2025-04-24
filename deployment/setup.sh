@@ -1,5 +1,5 @@
 #!/bin/bash
-# Master setup script to handle all deployment steps
+# Master setup script to handle deployment steps
 set -e
 
 echo "Starting PetClinic deployment process..."
