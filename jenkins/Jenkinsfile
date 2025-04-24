@@ -5,7 +5,6 @@ pipeline {
         SONAR_TOKEN     = credentials('SONAR_TOKEN') // SonarQube token
         ANSIBLE_HOST_KEY_CHECKING = 'False'
         PROD_VM_IP = credentials('prod-vm-ip') // Jenkins credential for VM IP
-        SSH_KEY = '~/.ssh/gcp_key' // Path to SSH key in Jenkins container
         SSH_USER = 'jenkins' // SSH username
     }
     stages {
