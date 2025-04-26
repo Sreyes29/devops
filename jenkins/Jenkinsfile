@@ -79,29 +79,31 @@ pipeline {
         stage('Prepare Deployment') {
             steps {
                 sh '''
-                # Create a deployment package
-                mkdir -p deployment-package
-                cp petclinic/target/*.jar deployment-package/petclinic.jar
-                cp deployment/* deployment-package/
-                chmod +x deployment-package/*.sh
+                # Create a directory for artifacts
+                mkdir -p ansible-deployment/files
+                
+                # Copy the JAR file
+                cp petclinic/target/*.jar ansible-deployment/files/petclinic.jar
+                
+                # Generate inventory file
+                echo "[petclinic]" > ansible-deployment/inventory
+                echo "${PROD_VM_IP} ansible_user=${SSH_USER}" >> ansible-deployment/inventory
+                
+                # Copy Ansible playbooks and templates
+                cp -r deployment/ansible/* ansible-deployment/
                 '''
             }
         }
 
         stage('Deploy to VM') {
             steps {
-                sshagent(['prod-vm-ssh-key']) { // Use Jenkins' SSH Agent plugin with credentials ID 'jenkins-ssh-key'
+                sshagent(['prod-vm-ssh-key']) {
                     sh '''
-                        # Create deployment directory on remote server
-                        ssh -o StrictHostKeyChecking=no ${SSH_USER}@${PROD_VM_IP} "mkdir -p ~/petclinic-deployment"
-                        
-                        # Copy deployment package to the VM
-                        scp -o StrictHostKeyChecking=no -r deployment-package/* ${SSH_USER}@${PROD_VM_IP}:~/petclinic-deployment/
-                        
-                        # Execute remote setup script
-                        ssh -o StrictHostKeyChecking=no ${SSH_USER}@${PROD_VM_IP} "cd ~/petclinic-deployment && sudo ./setup.sh"
+                        cd ansible-deployment
+                        ansible-playbook -i inventory deploy-petclinic.yml -v
                     '''
                 }
+                echo 'Ansible deployment completed'
             }
         }
 

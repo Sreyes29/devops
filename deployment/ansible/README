@@ -1,0 +1,34 @@
+# PetClinic Ansible Deployment
+
+This directory contains Ansible playbooks and templates for deploying the Spring PetClinic application.
+
+## Deployment Process
+
+The deployment process is fully automated through the Jenkins pipeline using Ansible. The following steps are executed:
+
+1. Install Java if needed
+2. Create the application user and group
+3. Set up application directories
+4. Deploy the application JAR file
+5. Configure the application properties
+6. Set up the systemd service
+7. Start and enable the service
+
+## Files
+
+- `deploy-petclinic.yml`: Main Ansible playbook for deployment
+- `petclinic.service.j2`: Template for systemd service
+- `application.properties.j2`: Template for application configuration
+
+## Manual Execution
+
+If you need to run the deployment manually:
+
+```bash
+# From the ansible-deployment directory
+ansible-playbook -i inventory deploy-petclinic.yml -v
+```
+
+## Customization
+
+You can customize the deployment by modifying the variables at the top of the deploy-petclinic.yml playbook.
